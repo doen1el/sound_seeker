@@ -242,7 +242,11 @@ class SoundSeeker:
                     items = scenenzbs_data['rss']['channel'].get('item', [])
                     if isinstance(items, dict):
                         items = [items]
+                    max_attempts = 2
+                    attempt = 1
                     for item in items:
+                        if attempt > max_attempts:
+                            break
                         nzb_url = item.get('enclosure', {}).get('@url')
                         nzb_title = f"{artist_str} - {title_str}"
                         if nzb_url:
@@ -250,15 +254,19 @@ class SoundSeeker:
                             result = self.send_to_sabnzbd(nzb_url, nzb_title)
                             src_folder = os.path.join(self.env["DOWNLOAD_DIR"], nzb_title)
                             ext = self.wait_for_download_folder(src_folder, exts=("flac", "mp3"))
-                            if not ext:
-                                continue
-                            self.logger.info(f"SABnzbd response: {result}")
-                            self.save_to_song_archive(track_id)
-                            self.move_and_rename_downloaded_file(nzb_title, artist_str, title_str, ext=ext)
-                            self.delete_downloaded_file(nzb_title)
-                            self.create_and_add_to_m3u(playlist_name, artist_str, title_str)
-                            found = True
-                            break
+                            if ext:
+                                self.logger.info(f"SABnzbd response: {result}")
+                                self.save_to_song_archive(track_id)
+                                self.move_and_rename_downloaded_file(nzb_title, artist_str, title_str, ext=ext)
+                                self.delete_downloaded_file(nzb_title)
+                                self.create_and_add_to_m3u(playlist_name, artist_str, title_str)
+                                found = True
+                                break
+                            else:
+                                self.logger.warning(f"Timeout {attempt}/{max_attempts} for {nzb_title}. Retrying next NZB...")
+                                attempt += 1
+                            if found:
+                                break
                 if not found:
                     self.logger.warning(f"No Usenet result for {title_str} - {artist_str}, trying YouTube...")
                     try:
