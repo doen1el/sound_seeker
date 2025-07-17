@@ -1,0 +1,6 @@
+.DS_Store
+songarchive.log
+.env
+playlists.txt
+yt_cookies.txt
+downloads/
