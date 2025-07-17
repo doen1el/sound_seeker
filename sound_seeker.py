@@ -304,7 +304,7 @@ class SoundSeeker:
             playlist_name, playlist_tracks = self.find_playlist_tracks(playlist_url)
             if not playlist_name or not playlist_tracks:
                 self.logger.error(f"Failed to fetch tracks for playlist {playlist_url}")
-                continue  # <-- Hier statt return
+                continue
             self.download_tracks(playlist_tracks, playlist_name)
 
 if __name__ == "__main__":
