@@ -5,3 +5,4 @@ playlists.txt
 yt_cookies.txt
 downloads/
 .cache
+__pycache__
