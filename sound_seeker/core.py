@@ -23,8 +23,9 @@ class SoundSeeker:
     def download_tracks(self, playlist_tracks, playlist_name):
         total = len(playlist_tracks)
         for step, item in enumerate(playlist_tracks, start=1):
-            if step >= 5:
-                break
+            # Only for debugging purposes, uncomment to limit steps
+            # if step >= 5:
+            #     break
             
             if not item or not item.get('track'):
                 self.logger.warning(f"Skipping invalid track item in {playlist_name} at step {step}.")

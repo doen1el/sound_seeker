@@ -1,0 +1,24 @@
+services:
+  sound-seeker:
+    build: .
+    container_name: sound-seeker
+    
+    environment:
+      - SCENENZBS_API_KEY=xxx # Replace with your actual scenenzbs API key
+      - SABNZBD_API_KEY=xxx # Replace with your actual sabnzbd API key
+      - SABNZBD_URL=http://127.0.0.1:8080 # Replace with your actual sabnzbd URL
+      - SABNZBD_CAT=music # Replace with your actual sabnzbd category for music (you can create a new category in sabnzbd if you want)
+      - SPOTIFY_CLIENT_ID=xxx # Replace with your actual Spotify client ID
+      - SPOTIFY_CLIENT_SECRET=xxx # Replace with your actual Spotify client secret
+      # Dont change these:
+      - DOWNLOAD_DIR=/downloads
+      - CLEAN_DIR=/music
+      - SONG_ARCHIVE_DIR=/archive
+      - SPOTIFY_PLAYLISTS_PATH=/config
+      - SPOTIFY_COOKIES_DIR=/config
+
+    volumes:
+      - /your/path:/downloads # Replace with your actual downloads directory
+      - /your/path:/music # Replace with your actual music directory
+      - /your/path:/archive # Replace with where you want to store the songarchive.log file
+      - /your/path:/config # Replace with where you're yt_cookie.txt and playlists.txt are located
