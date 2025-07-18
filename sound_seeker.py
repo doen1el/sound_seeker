@@ -37,24 +37,57 @@ class SoundSeeker:
         artist_dir = os.path.join(self.env["CLEAN_DIR"], artist)
         song_dir = os.path.join(artist_dir, title)
         os.makedirs(song_dir, exist_ok=True)
-        outtmpl = os.path.join(song_dir, f"{artist} - {title}.%(ext)s")
+        video_outtmpl = os.path.join(song_dir, f"{artist} - {title}.%(ext)s")
+        mp3_outtmpl = os.path.join(song_dir, f"{artist} - {title}.mp3")
         cookies_path = os.path.join(self.env.get("COOKIES_PATH", "."), "yt_cookies.txt")
         ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': outtmpl,
+            'format': 'bestvideo+bestaudio/best',
+            'outtmpl': video_outtmpl,
             'noplaylist': True,
             'quiet': True,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '320',
-            }],
             'cookiefile': cookies_path if os.path.exists(cookies_path) else None,
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            self.logger.info(f"Downloading from YouTube: {artist} - {title} audio")
+            self.logger.info(f"Downloading high quality video from YouTube: {artist} - {title}")
             ydl.download([f"ytsearch1:{artist} - {title} audio"])
-        self.logger.info(f"Downloaded {artist} - {title} from YouTube.")
+        try:
+            files = glob.glob(os.path.join(song_dir, f"{artist} - {title}.*"))
+            video_file = next((f for f in files if not f.endswith('.mp3')), None)
+            if not video_file:
+                raise FileNotFoundError(f"No video file found for {artist} - {title} in {song_dir}")
+            cmd = [
+                "ffmpeg", "-y", "-i", video_file, "-vn", "-ab", "320k", "-map_metadata", "0", mp3_outtmpl
+            ]
+            subprocess.run(cmd, check=True)
+            os.remove(video_file)
+            self.logger.info(f"Converted {video_file} to {mp3_outtmpl} and deleted original video.")
+        except Exception as e:
+            self.logger.error(f"Error converting video to mp3: {e}")
+        
+    def download_from_soundcloud(self, artist, title):
+        try: 
+            artist_dir = os.path.join(self.env["CLEAN_DIR"], artist)
+            song_dir = os.path.join(artist_dir, title)
+            os.makedirs(song_dir, exist_ok=True)
+            outtmpl = os.path.join(song_dir, f"{artist} - {title}.%(ext)s")
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': outtmpl,
+                'noplaylist': True,
+                'quiet': True,
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '320',
+                }],
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                self.logger.info(f"Downloading from SoundCloud: {artist} - {title}")
+                ydl.download([f"scsearch1:{artist} - {title}"])
+            self.logger.info(f"Downloaded {artist} - {title} from SoundCloud.")
+        except Exception as e:
+            self.logger.error(f"Error downloading from SoundCloud: {e}")
+            raise e
 
     def get_music_by_search(self, query):
         try:
@@ -66,6 +99,19 @@ class SoundSeeker:
         except Exception as e:
             self.logger.error(f"Error fetching music from SceneNZBs: {e}")
             return {}
+    
+    # This approach wont give me the good results :(
+    # def get_music_by_title_and_artist(self, title, artist):
+    #     try:
+    #         title_encoded = urllib.parse.quote(title)
+    #         artist_encoded = urllib.parse.quote(artist)
+    #         url = f"https://scenenzbs.com/api?t=music&title={title_encoded}&artist={artist_encoded}&apikey={self.env['SCENENZBS_API_KEY']}"
+    #         response = requests.get(url)
+    #         response.raise_for_status()
+    #         return xmltodict.parse(response.content)
+    #     except Exception as e:
+    #         self.logger.error(f"Error fetching music from SceneNZBs: {e}")
+    #         return {}
 
     def send_to_sabnzbd(self, nzb_url, nzb_title):
         try:
@@ -227,6 +273,9 @@ class SoundSeeker:
         try:
             total = len(playlist_tracks)
             for step, item in enumerate(playlist_tracks, start=1):
+                if step >= 5:
+                    break
+                
                 self.logger.info(f"Processing track {step}/{total} from playlist {playlist_name}")
                 track = item['track']
                 track_id = track['id']
@@ -268,13 +317,45 @@ class SoundSeeker:
                             if found:
                                 break
                 if not found:
-                    self.logger.warning(f"No Usenet result for {title_str} - {artist_str}, trying YouTube...")
+                    self.logger.warning(f"No usenet result for {title_str} - {artist_str} trying Soundcloud...")
                     try:
-                        self.download_from_youtube(artist_str, title_str)
-                        self.save_to_song_archive(track_id)
-                        self.create_and_add_to_m3u(playlist_name, artist_str, title_str)
-                    except Exception as e:
-                        self.logger.error(f"Error downloading from YouTube: {e}")
+                        self.download_from_soundcloud(artist_str, title_str)
+                        song_dir = os.path.join(self.env["CLEAN_DIR"], artist_str, title_str)
+                        mp3_file = os.path.join(song_dir, f"{artist_str} - {title_str}.mp3")
+                        valid = False
+                        if os.path.exists(mp3_file):
+                            try:
+                                result = subprocess.run(
+                                    ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
+                                    "default=noprint_wrappers=1:nokey=1", mp3_file],
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                                )
+                                duration = float(result.stdout.strip())
+                                if duration >= 60:
+                                    valid = True
+                            except Exception as e:
+                                self.logger.error(f"Error checking MP3 duration after SoundCloud: {e}")
+                        if valid:
+                            self.save_to_song_archive(track_id)
+                            self.create_and_add_to_m3u(playlist_name, artist_str, title_str)
+                        else:
+                            self.logger.warning(f"SoundCloud file for {title_str} - {artist_str} invalid or too short, trying YouTube...")
+                            try:
+                                self.download_from_youtube(artist_str, title_str)
+                                self.save_to_song_archive(track_id)
+                                self.create_and_add_to_m3u(playlist_name, artist_str, title_str)
+                            except Exception as e:
+                                self.logger.error(f"Error downloading from YouTube: {e}, skipping track {title_str} by {artist_str}.")
+                    except Exception as e2:
+                        self.logger.error(f"Error downloading from SoundCloud: {e2}, trying YouTube...")
+                        try:
+                            self.download_from_youtube(artist_str, title_str)
+                            self.save_to_song_archive(track_id)
+                            self.create_and_add_to_m3u(playlist_name, artist_str, title_str)
+                        except Exception as e:
+                            self.logger.error(f"Error downloading from YouTube: {e}, skipping track {title_str} by {artist_str}.")
+                        
+                
 
         except Exception as e:
             self.logger.error(f"Error downloading tracks: {e}")
@@ -311,3 +392,12 @@ if __name__ == "__main__":
     logger = setup_logger(level=logging.INFO)
     downloader = SoundSeeker(logger=logger)
     downloader.download_each_playlist()
+    
+# - clean tmp folder
+# - clean download folder
+# - clean empty folders in clean folder
+# - use music search in scenenzbs
+# - use soundcloud as fallback
+# - download yt video in high quality and then convert to mp3
+# - create gui
+# - make is possible to remove songs from the archive and clean folder
