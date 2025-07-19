@@ -23,23 +23,24 @@ class SoundSeeker:
 
             track = item['track']
             track_id = track['id']
-            artist_str = ' '.join(artist['name'] for artist in track['artists'])
+            artist_search_str = ' '.join(artist['name'] for artist in track['artists'])
+            artist_file_str = ', '.join(artist['name'] for artist in track['artists'])
             title_str = track['name']
 
-            self.logger.info(f"Processing {step}/{total}: {artist_str} - {title_str}")
+            self.logger.info(f"Processing {step}/{total}: {artist_file_str} - {title_str}")
 
             if track_id in self.song_archive:
                 self.logger.info("Track already in archive, skipping...")
                 continue
 
-            if self.try_usenet_download(artist_str, title_str, track_id, playlist_name):
+            if self.try_usenet_download(artist_search_str, artist_file_str, title_str, track_id, playlist_name):
                 continue
 
-            self.logger.warning(f"No NZB found for '{artist_str} - {title_str}', trying SpotDL...")
-            self.try_spotdl_download(track_id, artist_str, title_str, playlist_name)
+            self.logger.warning(f"No NZB found for '{artist_file_str} - {title_str}', trying SpotDL...")
+            self.try_spotdl_download(track_id, artist_file_str, title_str, playlist_name)
 
-    def try_usenet_download(self, artist_str, title_str, track_id, playlist_name):
-        query = f"{artist_str} {title_str}"
+    def try_usenet_download(self, artist_search_str, artist_file_str, title_str, track_id, playlist_name):
+        query = f"{artist_search_str} {title_str}"
         data = services.get_music_by_search(query, self.env['SCENENZBS_API_KEY'], self.logger)
         if not data or data.get("rss", {}).get("channel", {}).get("newznab:response", {}).get("@total") == "0":
             return False
@@ -49,28 +50,28 @@ class SoundSeeker:
 
         for item in items:
             nzb_url = item.get('enclosure', {}).get('@url')
-            nzb_title = f"{artist_str} - {title_str}"
+            nzb_title = f"{artist_file_str} - {title_str}"
             if nzb_url:
                 self.logger.info(f"NZB found: {nzb_title}")
                 services.send_to_sabnzbd(nzb_url, nzb_title, self.env['SABNZBD_URL'], self.env['SABNZBD_API_KEY'], self.env['SABNZBD_CAT'], self.logger)
                 
                 ext = file_handler.wait_for_download_folder(nzb_title, self.env['DOWNLOAD_DIR'], self.logger)
                 if ext:
-                    file_handler.move_and_rename_downloaded_file(nzb_title, artist_str, title_str, ext, self.env['DOWNLOAD_DIR'], self.env['CLEAN_DIR'], self.logger)
+                    file_handler.move_and_rename_downloaded_file(nzb_title, artist_file_str, title_str, ext, self.env['DOWNLOAD_DIR'], self.env['CLEAN_DIR'], self.logger)
                     utils.save_to_song_archive(self.song_archive_path, track_id, self.logger)
                     self.song_archive.add(track_id)
-                    file_handler.create_and_add_to_m3u(playlist_name, artist_str, title_str, self.env['CLEAN_DIR'], self.logger)
+                    file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
                     return True
         return False
 
-    def try_spotdl_download(self, track_id, artist_str, title_str, playlist_name):
+    def try_spotdl_download(self, track_id, artist_file_str, title_str, playlist_name):
         try:
-            services.download_with_spotdl(track_id, artist_str, title_str, self.env['CLEAN_DIR'], self.logger)
+            services.download_with_spotdl(track_id, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
             utils.save_to_song_archive(self.song_archive_path, track_id, self.logger)
             self.song_archive.add(track_id)
-            file_handler.create_and_add_to_m3u(playlist_name, artist_str, title_str, self.env['CLEAN_DIR'], self.logger)
+            file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
         except Exception as e:
-            self.logger.error(f"SpotDL download failed for '{artist_str} - {title_str}': {e}")
+            self.logger.error(f"SpotDL download failed for '{artist_file_str} - {title_str}': {e}")
 
     def download_each_playlist(self):
         try:

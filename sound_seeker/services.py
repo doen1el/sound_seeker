@@ -72,7 +72,9 @@ def download_with_spotdl(track_id, artist, title, clean_dir, logger, audio_forma
             "--format", audio_format,
             "--audio", "youtube-music",
             "--overwrite", "force",
-            "--cookie-file", os.path.join(os.getenv("SPOTIFY_COOKIES_DIR", "."), "yt_cookies.txt"),
+            "--cookie-file", os.path.join(os.getenv("COOKIES_PATH"), "yt_cookies.txt"),
+            "--client-id", os.getenv("SPOTIFY_CLIENT_ID"),
+            "--client-secret", os.getenv("SPOTIFY_CLIENT_SECRET"),
         ]
         logger.info(f"Downloading with SpotDL: {artist} - {title}.{audio_format}")
         subprocess.run(cmd, check=True, capture_output=True, text=True)
