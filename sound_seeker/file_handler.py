@@ -60,7 +60,7 @@ def wait_for_download_folder(nzb_title, download_dir, logger, exts=("flac", "mp3
 def create_and_add_to_m3u(playlist_name, artist, title, clean_dir, logger):
     try:
         m3u_file = os.path.join(clean_dir, f"{playlist_name}.m3u")
-        track_path = os.path.join(artist, f"{artist} - {title}.ogg")
+        track_path = os.path.join(artist, title, f"{artist} - {title}.ogg")
         with open(m3u_file, "a", encoding="utf-8") as f:
             f.write(f"{track_path}\n")
         logger.info(f"'{artist} - {title}' added to {m3u_file}.")

@@ -21,4 +21,4 @@ services:
       - /your/path:/downloads # Replace with your actual downloads directory
       - /your/path:/music # Replace with your actual music directory
       - /your/path:/archive # Replace with where you want to store the songarchive.log file
-      - /your/path:/config # Replace with where you're yt_cookie.txt and playlists.txt are located
+      - /your/path:/config # Replace with where you're yt_cookies.txt and playlists.txt are located

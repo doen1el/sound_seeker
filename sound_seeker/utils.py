@@ -1,6 +1,35 @@
 import logging
 import os
 
+def check_and_load_env(logger):
+    env_keys = [
+        "SCENENZBS_API_KEY", "SABNZBD_API_KEY", "SABNZBD_URL", "SABNZBD_CAT",
+        "SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "DOWNLOAD_DIR", "CLEAN_DIR",
+        "SONG_ARCHIVE_DIR", "COOKIES_PATH", "SPOTIFY_PLAYLISTS_PATH"
+    ]
+    
+    env = {k: os.getenv(k) for k in env_keys}
+
+    missing_vars = [k for k, v in env.items() if not v]
+    if missing_vars:
+        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+    playlists_path = os.path.join(env["SPOTIFY_PLAYLISTS_PATH"], 'playlists.txt')
+    if not os.path.exists(playlists_path):
+        raise FileNotFoundError(f"Configuration file not found: playlists.txt was expected in '{env['SPOTIFY_PLAYLISTS_PATH']}'")
+
+    cookies_path = os.path.join(env["COOKIES_PATH"], 'yt_cookies.txt')
+    if not os.path.exists(cookies_path):
+        raise FileNotFoundError(f"Configuration file not found: yt_cookies.txt was expected in '{env['COOKIES_PATH']}'")
+    
+    dir_keys = ["DOWNLOAD_DIR", "CLEAN_DIR", "SONG_ARCHIVE_DIR", "COOKIES_PATH", "SPOTIFY_PLAYLISTS_PATH"]
+    for key in dir_keys:
+        if not os.path.isdir(env[key]):
+            raise NotADirectoryError(f"The path specified for {key} is not a valid directory: '{env[key]}'")
+
+    logger.info("Environment variables and configuration files validated successfully.")
+    return env
+
 def setup_logger(level=logging.INFO):
     logger = logging.getLogger("SoundSeeker")
     if not logger.hasHandlers():

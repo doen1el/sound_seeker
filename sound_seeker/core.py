@@ -6,17 +6,7 @@ class SoundSeeker:
     def __init__(self, logger):
         load_dotenv()
         self.logger = logger
-        
-        env_keys = [
-            "SCENENZBS_API_KEY", "SABNZBD_API_KEY", "SABNZBD_CAT", "SABNZBD_URL",
-            "DOWNLOAD_DIR", "CLEAN_DIR", "SONG_ARCHIVE_DIR", "SPOTIFY_CLIENT_ID", 
-            "SPOTIFY_CLIENT_SECRET", "SPOTIFY_PLAYLISTS_PATH"
-        ]
-        self.env = {k: os.getenv(k) for k in env_keys}
-        missing = [k for k, v in self.env.items() if not v]
-        if missing:
-            raise ValueError(f"Missing env variable: {', '.join(missing)}")
-
+        self.env = utils.check_and_load_env(self.logger)
         self.song_archive_path = os.path.join(self.env["SONG_ARCHIVE_DIR"], "songarchive.log")
         self.song_archive = utils.load_song_archive(self.song_archive_path, self.logger)
 
