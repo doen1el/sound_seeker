@@ -15,7 +15,7 @@ services:
       - CLEAN_DIR=/music
       - SONG_ARCHIVE_DIR=/archive
       - SPOTIFY_PLAYLISTS_PATH=/config
-      - SPOTIFY_COOKIES_DIR=/config
+      - COOKIES_PATH=/config
 
     volumes:
       - /your/path:/downloads # Replace with your actual downloads directory
