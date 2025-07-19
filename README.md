@@ -26,6 +26,11 @@ Sound Seeker is a Python application to automate the process of building your mu
 2.  **Create `.env` File**
     Create a file named `.env` in the root directory and fill it with the required values. See the section below for details.
 
+3. **Create `yt_cookies.txt` File**
+    You need to create a `yt_cookies.txt` file that SpotDL will use to access YouTube Music. This file should contain your YouTube cookies in the format required by SpotDL. You can export your cookies using browser extensions like [Get-cookies.txt-LOCALLY](https://github.com/kairi003/Get-cookies.txt-Locally).
+
+    Place this file in the directory specified by the `COOKIES_PATH` environment variable in your `.env` file.
+
 3.  **Create `playlists.txt` File**
     Create a file named `playlists.txt` in the directory specified by `SPOTIFY_PLAYLISTS_PATH`. Add your Spotify playlist URLs, one per line.
 
@@ -43,25 +48,17 @@ Sound Seeker is a Python application to automate the process of building your mu
     Open the `docker-compose.yml` file and edit the following sections:
     -   **`environment`**: Replace all `xxx` placeholders with your actual API keys and secrets. If SABnzbd is running on the same machine (your host), change the `SABNZBD_URL` to `http://host.docker.internal:8080`. This special DNS name allows the container to connect to services running on your host.
     -   **`volumes`**: Replace all instances of `/your/path` with the **absolute paths** on your local machine. This connects your local folders to the folders inside the container, ensuring your data persists.
-
-    **Example `volumes` configuration for a user named "daniel" on macOS:**
-    ```yaml
-    volumes:
-      - /your/path:/downloads
-      - /your/path:/music
-      - /your/path:/archive
-      - /your/path:/config
     ```
 
 3.  **Place Configuration Files**
-    Based on the example above, make sure your `playlists.txt` and `yt_cookies.txt` files are located in the local directory you mapped to `/config` (e.g., `/your/path`).
+    Based on the example above, make sure your `playlists.txt` and `yt_cookies.txt` files are located in the local directory you mapped to `/config` (e.g., `/your/path/config`).
 
 4.  **Build and Run the Container**
     Open a terminal in the project's root directory and run:
     ```bash
     docker-compose up --build
     ```
-    The application will start inside the container. To stop it, press `Ctrl+C`.
+    The application will start inside the container.
 
 ### Environment Variables
 
@@ -76,5 +73,5 @@ Create a `.env` file in the project root with the following variables:
 -   `DOWNLOAD_DIR`: The temporary folder where SABnzbd places completed downloads.
 -   `CLEAN_DIR`: The final destination folder for sorted and processed music files.
 -   `SONG_ARCHIVE_DIR`: The directory where the `songarchive.log` will be stored to track downloaded songs.
--   `COOKIES_PATH`: The path to the directory containing the cookies file used by SpotDL (e.g., `yt_cookies.txt`).
+-   `COOKIES_PATH`: The path to the directory containing the cookies file used by SpotDL ( `yt_cookies.txt`).
 -   `SPOTIFY_PLAYLISTS_PATH`: The path to the directory where your `playlists.txt` file is located.
