@@ -1,8 +1,8 @@
+.cache
 .DS_Store
+__pycache__/
+downloads/
+playlists.txt
 songarchive.log
 .env
-playlists.txt
 yt_cookies.txt
-downloads/
-.cache
-__pycache__

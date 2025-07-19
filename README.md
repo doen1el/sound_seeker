@@ -1,5 +1,12 @@
 # Sound Seeker
 
+Sound Seeker is a Python application to automate the process of building your music library from Spotify playlists. It fetches tracks from your specified playlists and attempts to download the highest quality version available from Usenet via SABnzbd. If a track cannot be found on Usenet, it falls back to using SpotDL to grab it from alternative sources like YouTube Music.
+
+- Downloading tracks from Usenet using SABnzbd.
+- Fallback to SpotDL for tracks not found on Usenet.
+- Creates clean folder structures for artists and songs (e.g. `Artist/Song Title/artist-songtitle.ogg`).
+- Creates `.m3u` playlist files for easy import into media servers like Navidrome.
+
 ### Requirements
 
 - Python 3.x
@@ -26,6 +33,35 @@
     ```bash
     python main.py
     ```
+
+### Running with Docker (Recommended)
+
+1.  **Install Docker and Docker Compose.**
+    Follow the official installation guide for your operating system.
+
+2.  **Configure `docker-compose.yml`**
+    Open the `docker-compose.yml` file and edit the following sections:
+    -   **`environment`**: Replace all `xxx` placeholders with your actual API keys and secrets. If SABnzbd is running on the same machine (your host), change the `SABNZBD_URL` to `http://host.docker.internal:8080`. This special DNS name allows the container to connect to services running on your host.
+    -   **`volumes`**: Replace all instances of `/your/path` with the **absolute paths** on your local machine. This connects your local folders to the folders inside the container, ensuring your data persists.
+
+    **Example `volumes` configuration for a user named "daniel" on macOS:**
+    ```yaml
+    volumes:
+      - /your/path:/downloads
+      - /your/path:/music
+      - /your/path:/archive
+      - /your/path:/config
+    ```
+
+3.  **Place Configuration Files**
+    Based on the example above, make sure your `playlists.txt` and `yt_cookies.txt` files are located in the local directory you mapped to `/config` (e.g., `/your/path`).
+
+4.  **Build and Run the Container**
+    Open a terminal in the project's root directory and run:
+    ```bash
+    docker-compose up --build
+    ```
+    The application will start inside the container. To stop it, press `Ctrl+C`.
 
 ### Environment Variables
 
