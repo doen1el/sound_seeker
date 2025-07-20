@@ -50,12 +50,29 @@ def wait_for_sabnzbd_job(nzb_title, sab_url, api_key, logger, timeout=1000, poll
 def find_playlist_tracks(playlist_id, client_id, client_secret, logger):
     try:
         sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
-        playlist = sp.playlist(playlist_id=playlist_id)
-        if playlist['tracks']['total'] == 0:
-            logger.warning(f"Playlist '{playlist['name']}' is empty.")
-            return None, []
-        logger.info(f"Playlist '{playlist['name']}' has {playlist['tracks']['total']} tracks.")
-        return playlist["name"], playlist['tracks']['items']
+        
+        playlist_info = sp.playlist(playlist_id, fields="name,tracks.total")
+        playlist_name = playlist_info['name']
+        total_tracks = playlist_info['tracks']['total']
+
+        if total_tracks == 0:
+            logger.warning(f"Playlist '{playlist_name}' is empty.")
+            return playlist_name, []
+
+        logger.info(f"Fetching {total_tracks} tracks from playlist '{playlist_name}'...")
+
+        all_tracks = []
+        results = sp.playlist_tracks(playlist_id)
+        all_tracks.extend(results['items'])
+
+        while results['next']:
+            results = sp.next(results)
+            all_tracks.extend(results['items'])
+            logger.info(f"Fetched {len(all_tracks)}/{total_tracks} tracks...")
+
+        logger.info(f"Successfully fetched all {len(all_tracks)} tracks from '{playlist_name}'.")
+        return playlist_name, all_tracks
+        
     except Exception as e:
         logger.error(f"Error fetching playlist tracks: {e}")
         return None, []
