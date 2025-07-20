@@ -61,6 +61,13 @@ def create_and_add_to_m3u(playlist_name, artist, title, clean_dir, logger):
     try:
         m3u_file = os.path.join(clean_dir, f"{playlist_name}.m3u")
         track_path = os.path.join(artist, title, f"{artist} - {title}.ogg")
+        
+        if os.path.exists(m3u_file):
+            with open(m3u_file, "r", encoding="utf-8") as f:
+                if f"{track_path}\n" in f.readlines():
+                    logger.info(f"'{artist} - {title}' is already in {playlist_name}.m3u. Skipping addition.")
+                    return
+
         with open(m3u_file, "a", encoding="utf-8") as f:
             f.write(f"{track_path}\n")
         logger.info(f"'{artist} - {title}' added to {m3u_file}.")

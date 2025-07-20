@@ -30,7 +30,8 @@ class SoundSeeker:
             self.logger.info(f"Processing {step}/{total}: {artist_file_str} - {title_str}")
 
             if track_id in self.song_archive:
-                self.logger.info("Track already in archive, skipping...")
+                self.logger.info(f"Track already in archive. Adding to playlist {playlist_name} and skipping download...")
+                file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
                 continue
 
             if self.try_usenet_download(artist_search_str, artist_file_str, title_str, track_id, playlist_name):
