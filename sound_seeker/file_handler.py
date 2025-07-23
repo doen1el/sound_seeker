@@ -95,5 +95,5 @@ def check_if_song_exists(artist, title, clean_dir, logger, ext="ogg"):
         logger.info(f"Confirmed song file exists at: {expected_path}")
         return True
     else:
-        logger.warning(f"Song file not found at expected path: {expected_path}")
+        logger.warning(f"Song file not found at expected path: {expected_path}. Skipping addition to .m3u and to songarchive. This song will be downloaded again next time.")
         return False

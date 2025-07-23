@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import time
 from . import utils, services, file_handler
 
 class SoundSeeker:
@@ -9,6 +10,25 @@ class SoundSeeker:
         self.env = utils.check_and_load_env(self.logger)
         self.song_archive_path = os.path.join(self.env["SONG_ARCHIVE_DIR"], "songarchive.log")
         self.song_archive = utils.load_song_archive(self.song_archive_path, self.logger)
+        self.stop_event = None
+        self.pause_event = None
+        
+    def check_events(self):
+        if self.stop_event and self.stop_event.is_set():
+            self.logger.info("Stop event detected. Terminating download.")
+            return True
+
+        if self.pause_event and self.pause_event.is_set():
+            self.logger.info("Pause-Event detected. Waiting for resume...")
+            while self.pause_event.is_set() and not (self.stop_event and self.stop_event.is_set()):
+                time.sleep(0.5)
+                
+            if self.stop_event and self.stop_event.is_set():
+                return True
+                
+            self.logger.info("Resuming download after pause.")
+            
+        return False
 
     def download_tracks(self, playlist_tracks, playlist_name):
         total = len(playlist_tracks)
@@ -16,6 +36,9 @@ class SoundSeeker:
             # Only for debugging purposes, uncomment to limit steps
             # if step >= 5:
             #     break
+            
+            if self.check_events():
+                return
             
             if not item or not item.get('track'):
                 self.logger.warning(f"Skipping invalid track item in {playlist_name} at step {step}.")
@@ -46,6 +69,8 @@ class SoundSeeker:
             self.try_spotdl_download(track_id, artist_file_str, title_str, playlist_name)
 
     def try_usenet_download(self, artist_search_str, artist_file_str, title_str, track_id, playlist_name):
+        if self.check_events():
+            return
         query = f"{artist_search_str} {title_str}"
         data = services.get_music_by_search(query, self.env['SCENENZBS_API_KEY'], self.logger)
         if not data or data.get("rss", {}).get("channel", {}).get("newznab:response", {}).get("@total") == "0":
@@ -74,6 +99,8 @@ class SoundSeeker:
         return False
 
     def try_spotdl_download(self, track_id, artist_file_str, title_str, playlist_name):
+        if self.check_events():
+            return
         try:
             services.download_with_spotdl(track_id, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
             
@@ -85,6 +112,8 @@ class SoundSeeker:
             self.logger.error(f"SpotDL download failed for '{artist_file_str} - {title_str}': {e}")
 
     def download_each_playlist(self):
+        if self.check_events():
+            return
         try:
             file_path = os.path.join(self.env["SPOTIFY_PLAYLISTS_PATH"], 'playlists.txt')
             with open(file_path, "r") as f:

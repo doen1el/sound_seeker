@@ -1,7 +1,7 @@
 import logging
 import os
 
-def check_and_load_env(logger):
+def check_and_load_env(logger, silent=False):
     env_keys = [
         "SCENENZBS_API_KEY", "SABNZBD_API_KEY", "SABNZBD_URL", "SABNZBD_CAT",
         "SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_SECRET", "DOWNLOAD_DIR", "CLEAN_DIR",
@@ -27,7 +27,8 @@ def check_and_load_env(logger):
         if not os.path.isdir(env[key]):
             raise NotADirectoryError(f"The path specified for {key} is not a valid directory: '{env[key]}'")
 
-    logger.info("Environment variables and configuration files validated successfully.")
+    if not silent:
+        logger.info("Environment variables and configuration files validated successfully.")
     return env
 
 def setup_logger(level=logging.INFO):

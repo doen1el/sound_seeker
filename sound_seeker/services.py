@@ -102,3 +102,43 @@ def download_with_spotdl(track_id, artist, title, clean_dir, logger, audio_forma
     except Exception as e:
         logger.error(f"Common error during SpotDL download: {e}")
         raise
+    
+def get_playlist_info(playlist_id, client_id, client_secret, logger):
+    try:
+        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
+        
+        playlist = sp.playlist(playlist_id, fields="name,images,owner,tracks.total")
+        
+        image_url = playlist['images'][0]['url'] if playlist.get('images') else ''
+        owner_name = playlist['owner']['display_name'] if playlist.get('owner') else ''
+        
+        return {
+            'id': playlist_id,
+            'name': playlist['name'],
+            'tracks_total': playlist['tracks']['total'],
+            'image': image_url,
+            'owner': owner_name
+        }
+    except Exception as e:
+        logger.error(f"Error getting playlist info: {e}")
+        return None
+    
+def get_track_info(track_id, client_id, client_secret, logger):
+    try:
+        sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
+        
+        track = sp.track(track_id)
+        
+        artists = ", ".join([artist['name'] for artist in track['artists']])
+        image_url = track['album']['images'][0]['url'] if track['album'].get('images') else ''
+        
+        return {
+            'id': track_id,
+            'name': track['name'],
+            'artists': artists,
+            'image': image_url,
+            'album': track['album']['name']
+        }
+    except Exception as e:
+        logger.error(f"Error getting track info: {e}")
+        return None
