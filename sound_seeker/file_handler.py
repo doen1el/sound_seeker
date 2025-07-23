@@ -40,7 +40,7 @@ def move_and_rename_downloaded_file(nzb_title, artist, title, ext, download_dir,
                 
                 shutil.rmtree(src_folder)
                 logger.info(f"SABnzbd-Folder deleted: {src_folder}")
-                return
+                return ext
     except Exception as e:
         logger.error(f"Error while removing/deleting '{nzb_title}': {e}")
 
@@ -57,10 +57,10 @@ def wait_for_download_folder(nzb_title, download_dir, logger, exts=("flac", "mp3
     logger.warning(f"Timeout: No matching audio file found in {src_folder} after {timeout} seconds.")
     return None
 
-def create_and_add_to_m3u(playlist_name, artist, title, clean_dir, logger):
+def create_and_add_to_m3u(playlist_name, artist, title, clean_dir, logger, ext="ogg"):
     try:
         m3u_file = os.path.join(clean_dir, f"{playlist_name}.m3u")
-        track_path = os.path.join(artist, title, f"{artist} - {title}.ogg")
+        track_path = os.path.join(artist, title, f"{artist} - {title}.{ext}")
         
         if os.path.exists(m3u_file):
             with open(m3u_file, "r", encoding="utf-8") as f:
@@ -87,3 +87,13 @@ def remove_empty_folders(clean_dir, logger):
                     logger.info(f"Removed folder: {dir_path}")
                 except OSError as e:
                     logger.error(f"Error while removing {dir_path}: {e}")
+            
+def check_if_song_exists(artist, title, clean_dir, logger, ext="ogg"):
+    """Checks if the final song file exists in the clean directory."""
+    expected_path = os.path.join(clean_dir, artist, title, f"{artist} - {title}.{ext}")
+    if os.path.exists(expected_path):
+        logger.info(f"Confirmed song file exists at: {expected_path}")
+        return True
+    else:
+        logger.warning(f"Song file not found at expected path: {expected_path}")
+        return False

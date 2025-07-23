@@ -31,7 +31,12 @@ class SoundSeeker:
 
             if track_id in self.song_archive:
                 self.logger.info(f"Track already in archive. Adding to playlist {playlist_name} and skipping download...")
-                file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
+                if file_handler.check_if_song_exists(artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext="ogg"):
+                    file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext="ogg")
+                elif file_handler.check_if_song_exists(artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext="mp3"):
+                    file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext="mp3")
+                else:
+                    self.logger.warning(f"Archived song '{artist_file_str} - {title_str}' not found on disk. Re-downloading might be necessary.")
                 continue
 
             if self.try_usenet_download(artist_search_str, artist_file_str, title_str, track_id, playlist_name):
@@ -59,18 +64,23 @@ class SoundSeeker:
                 ext = file_handler.wait_for_download_folder(nzb_title, self.env['DOWNLOAD_DIR'], self.logger)
                 if ext:
                     file_handler.move_and_rename_downloaded_file(nzb_title, artist_file_str, title_str, ext, self.env['DOWNLOAD_DIR'], self.env['CLEAN_DIR'], self.logger)
-                    utils.save_to_song_archive(self.song_archive_path, track_id, self.logger)
-                    self.song_archive.add(track_id)
-                    file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
-                    return True
+                    
+                    final_ext = "ogg" if ext == "flac" else ext
+                    if file_handler.check_if_song_exists(artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext=final_ext):
+                        utils.save_to_song_archive(self.song_archive_path, track_id, self.logger)
+                        self.song_archive.add(track_id)
+                        file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext=final_ext)
+                        return True
         return False
 
     def try_spotdl_download(self, track_id, artist_file_str, title_str, playlist_name):
         try:
             services.download_with_spotdl(track_id, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
-            utils.save_to_song_archive(self.song_archive_path, track_id, self.logger)
-            self.song_archive.add(track_id)
-            file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger)
+            
+            if file_handler.check_if_song_exists(artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext="ogg"):
+                utils.save_to_song_archive(self.song_archive_path, track_id, self.logger)
+                self.song_archive.add(track_id)
+                file_handler.create_and_add_to_m3u(playlist_name, artist_file_str, title_str, self.env['CLEAN_DIR'], self.logger, ext="ogg")
         except Exception as e:
             self.logger.error(f"SpotDL download failed for '{artist_file_str} - {title_str}': {e}")
 
