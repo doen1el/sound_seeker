@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
              if (data.success) {
                 loadPlaylists();
-                addLogMessage('System', 'INFO', 'Playlist successfully added');
+                addLogMessage('System', 'INFO', 'Playlist successfully removed');
             } else {
                 addLogMessage('System', 'ERROR', 'Error adding playlist: ' + data.message);
             }

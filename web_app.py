@@ -1,15 +1,12 @@
 import os
-import json
 import threading
 import time
-from queue import Queue
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 from sound_seeker.core import SoundSeeker
-from sound_seeker.utils import check_and_load_env
+from sound_seeker.utils import get_cached_env
 from sound_seeker import services
 import logging
-from dotenv import load_dotenv
 
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -50,9 +47,30 @@ download_status = {
     'current_method': ''
 }
 
+last_update_time = 0
+
+track_info_cache = {}
+playlist_info_cache = {}
+
+def get_track_info_cached(track_id, client_id, client_secret, logger):
+    """Cached version of track info retrieval"""
+    global track_info_cache
+    
+    if track_id in track_info_cache:
+        return track_info_cache[track_id]
+    
+    try:
+        track_info = services.get_track_info(track_id, client_id, client_secret, logger)
+        if track_info:
+            track_info_cache[track_id] = track_info
+        return track_info
+    except Exception as e:
+        logger.error(f"Error getting track info: {e}")
+        return None
+
 def get_playlists():
     try:
-        env = check_and_load_env(logger, silent=True)
+        env = get_cached_env(logger)
 
         file_path = os.path.join(env["SPOTIFY_PLAYLISTS_PATH"], 'playlists.txt')
         with open(file_path, "r") as f:
@@ -100,7 +118,7 @@ def get_playlists():
 
 def save_playlists(playlists):
     try:
-        env = check_and_load_env(logger)
+        env = get_cached_env(logger)
         file_path = os.path.join(env["SPOTIFY_PLAYLISTS_PATH"], 'playlists.txt')
         with open(file_path, "w") as f:
             for playlist in playlists:
@@ -114,7 +132,7 @@ def save_playlists(playlists):
 
 def get_downloaded_songs():
     try:
-        env = check_and_load_env(logger)
+        env = get_cached_env(logger)
         song_archive_path = os.path.join(env["SONG_ARCHIVE_DIR"], "songarchive.log")
         downloaded_songs = []
         
@@ -130,7 +148,7 @@ def get_downloaded_songs():
     
 def get_recent_downloads(limit=5):
     try:
-        env = check_and_load_env(logger)
+        env = get_cached_env(logger)
         song_archive_path = os.path.join(env["SONG_ARCHIVE_DIR"], "songarchive.log")
         recent_tracks = []
         
@@ -139,11 +157,9 @@ def get_recent_downloads(limit=5):
                 all_lines = f.readlines()
                 track_ids = [line.strip() for line in all_lines[-limit:] if line.strip()]
             
-            if track_ids:
-                from sound_seeker.services import get_track_info
-                
+            if track_ids:                
                 for track_id in reversed(track_ids):
-                    track_info = get_track_info(
+                    track_info = get_track_info_cached(
                         track_id, 
                         env['SPOTIFY_CLIENT_ID'], 
                         env['SPOTIFY_CLIENT_SECRET'], 
@@ -156,6 +172,14 @@ def get_recent_downloads(limit=5):
     except Exception as e:
         logger.error(f"Error getting recent downloads: {e}")
         return []
+    
+def emit_update_recent_downloads():
+    global last_update_time
+    current_time = time.time()
+    
+    if current_time - last_update_time > 5:
+        socketio.emit('update_recent_downloads')
+        last_update_time = current_time
 
 def download_worker():
     global downloader, download_status
@@ -187,7 +211,7 @@ def download_worker():
         elif "Successfully downloaded" in msg or "Track already in archive" in msg:
             download_status['processed_tracks'] += 1
             socketio.emit('status_update', download_status)
-            socketio.emit('update_recent_downloads')
+            emit_update_recent_downloads()
 
     def patched_warning(msg, *args, **kwargs):
         original_warning(msg, *args, **kwargs)

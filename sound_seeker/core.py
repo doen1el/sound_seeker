@@ -7,7 +7,7 @@ class SoundSeeker:
     def __init__(self, logger):
         load_dotenv()
         self.logger = logger
-        self.env = utils.check_and_load_env(self.logger)
+        self.env = utils.get_cached_env(self.logger)
         self.song_archive_path = os.path.join(self.env["SONG_ARCHIVE_DIR"], "songarchive.log")
         self.song_archive = utils.load_song_archive(self.song_archive_path, self.logger)
         self.stop_event = None

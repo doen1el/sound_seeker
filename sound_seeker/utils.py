@@ -1,6 +1,14 @@
 import logging
 import os
 
+cached_env = None
+
+def get_cached_env(logger, force_refresh=False):
+    global cached_env
+    if cached_env is None or force_refresh:
+        cached_env = check_and_load_env(logger, silent=True)
+    return cached_env
+
 def check_and_load_env(logger, silent=False):
     env_keys = [
         "SCENENZBS_API_KEY", "SABNZBD_API_KEY", "SABNZBD_URL", "SABNZBD_CAT",
