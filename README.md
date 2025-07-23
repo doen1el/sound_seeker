@@ -75,4 +75,3 @@ Create a `.env` file in the project root with the following variables:
 -   `SONG_ARCHIVE_DIR`: The directory where the `songarchive.log` will be stored to track downloaded songs.
 -   `COOKIES_PATH`: The path to the directory containing the cookies file used by SpotDL ( `yt_cookies.txt`).
 -   `SPOTIFY_PLAYLISTS_PATH`: The path to the directory where your `playlists.txt` file is located.
--   `PORT`: The port on which the web application will run (default is 5000).

@@ -2,7 +2,8 @@ services:
   sound-seeker:
     build: .
     container_name: sound-seeker
-    
+    ports:
+      - "5000:5000"
     environment:
       - SCENENZBS_API_KEY=xxx # Replace with your actual scenenzbs API key
       - SABNZBD_API_KEY=xxx # Replace with your actual sabnzbd API key
@@ -16,7 +17,6 @@ services:
       - SONG_ARCHIVE_DIR=/archive
       - SPOTIFY_PLAYLISTS_PATH=/config
       - COOKIES_PATH=/config
-      - PORT=5000 # You can change this to any port you prefer
 
     volumes:
       - /your/path:/downloads # Replace with your actual downloads directory
