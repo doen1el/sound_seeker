@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const startBtn = document.getElementById('start-btn');
     const pauseBtn = document.getElementById('pause-btn');
     const stopBtn = document.getElementById('stop-btn');
+    const skipBtn = document.getElementById('skip-btn');
     const statusContainer = document.getElementById('status-container');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
@@ -88,6 +89,19 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(err => console.error('Error stopping download:', err));
     });
 
+    skipBtn.addEventListener('click', () => {
+        fetch('/api/downloads/skip', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    addLogMessage('System', 'INFO', 'Skipping current track');
+                } else {
+                    addLogMessage('System', 'ERROR', 'Error skipping track: ' + data.message);
+                }
+            })
+            .catch(err => console.error('Error skipping track:', err));
+        });
+
     playlistForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const playlistUrl = playlistInput.value.trim();
@@ -123,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startBtn.disabled = downloadStatus.running && !downloadStatus.paused;
         pauseBtn.disabled = !downloadStatus.running || downloadStatus.paused;
         stopBtn.disabled = !downloadStatus.running;
+        skipBtn.disabled = !downloadStatus.running || downloadStatus.paused;
         
         if (downloadStatus.running) {
             statusContainer.innerHTML = downloadStatus.paused 

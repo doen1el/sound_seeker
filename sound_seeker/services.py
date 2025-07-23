@@ -87,7 +87,7 @@ def download_with_spotdl(track_id, artist, title, clean_dir, logger, audio_forma
             "spotdl", "download", spotify_url,
             "--output", song_dir,
             "--format", audio_format,
-            "--audio", "youtube-music",
+            "--audio", "youtube-music, youtube",
             "--overwrite", "force",
             "--cookie-file", os.path.join(os.getenv("COOKIES_PATH"), "yt_cookies.txt"),
             "--client-id", os.getenv("SPOTIFY_CLIENT_ID"),

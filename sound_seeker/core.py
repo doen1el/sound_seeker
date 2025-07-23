@@ -12,6 +12,7 @@ class SoundSeeker:
         self.song_archive = utils.load_song_archive(self.song_archive_path, self.logger)
         self.stop_event = None
         self.pause_event = None
+        self.skip_event = None
         
     def check_events(self):
         if self.stop_event and self.stop_event.is_set():
@@ -21,12 +22,19 @@ class SoundSeeker:
         if self.pause_event and self.pause_event.is_set():
             self.logger.info("Pause-Event detected. Waiting for resume...")
             while self.pause_event.is_set() and not (self.stop_event and self.stop_event.is_set()):
+                if self.skip_event and self.skip_event.is_set():
+                    self.logger.info("Skip event detected during pause. Will skip after resume.")
                 time.sleep(0.5)
                 
             if self.stop_event and self.stop_event.is_set():
                 return True
                 
             self.logger.info("Resuming download after pause.")
+            
+        if self.skip_event and self.skip_event.is_set():
+            self.logger.info("Skip event detected. Moving to next track.")
+            self.skip_event.clear()
+            return "skip"
             
         return False
 
@@ -37,9 +45,12 @@ class SoundSeeker:
             # if step >= 5:
             #     break
             
-            if self.check_events():
+            check_result = self.check_events()
+            if check_result is True: 
                 return
-            
+            elif check_result == "skip":
+                continue
+        
             if not item or not item.get('track'):
                 self.logger.warning(f"Skipping invalid track item in {playlist_name} at step {step}.")
                 continue

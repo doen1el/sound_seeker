@@ -38,6 +38,7 @@ downloader = None
 download_thread = None
 stop_event = threading.Event()
 pause_event = threading.Event()
+skip_event = threading.Event()
 download_status = {
     'running': False,
     'paused': False,
@@ -187,6 +188,7 @@ def download_worker():
     
     downloader.stop_event = stop_event
     downloader.pause_event = pause_event
+    downloader.skip_event = skip_event
     
     original_info = downloader.logger.info
     original_warning = downloader.logger.warning
@@ -283,6 +285,20 @@ def api_add_playlist():
                 return jsonify({"success": True, "playlists": playlists})
     
     return jsonify({"success": False, "message": "Invalid playlist URL"}), 400
+
+@app.route('/api/downloads/skip', methods=['POST'])
+def api_skip_song():
+    global download_status
+    
+    if not download_status['running']:
+        return jsonify({"success": False, "message": "No download running"}), 400
+    
+    if download_status['paused']:
+        return jsonify({"success": False, "message": "Download is paused. Resume first."}), 400
+    
+    skip_event.set()
+    logger.info("Skipping current track")
+    return jsonify({"success": True, "message": "Track skipped"})
 
 @app.route('/api/playlists', methods=['DELETE'])
 def api_remove_playlist():
