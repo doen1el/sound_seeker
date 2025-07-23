@@ -208,10 +208,17 @@ def download_worker():
         elif "Downloading with SpotDL:" in msg:
             download_status['current_method'] = 'SpotDL'
             socketio.emit('status_update', download_status)
+        elif "Successfully downloaded with NZB" in msg:
+            download_status['processed_tracks'] += 1
+            socketio.emit('status_update', download_status)
+            emit_update_recent_downloads()
         elif "Successfully downloaded" in msg or "Track already in archive" in msg:
             download_status['processed_tracks'] += 1
             socketio.emit('status_update', download_status)
             emit_update_recent_downloads()
+        elif msg.startswith("SpotDL:"):
+            download_status['current_track'] += f"\n{msg[8:]}"
+            socketio.emit('status_update', download_status)
 
     def patched_warning(msg, *args, **kwargs):
         original_warning(msg, *args, **kwargs)

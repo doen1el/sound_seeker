@@ -94,7 +94,26 @@ def download_with_spotdl(track_id, artist, title, clean_dir, logger, audio_forma
             "--client-secret", os.getenv("SPOTIFY_CLIENT_SECRET"),
         ]
         logger.info(f"Downloading with SpotDL: {artist} - {title}.{audio_format}")
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+        
+        for line in process.stdout:
+            line = line.strip()
+            if line:
+                logger.info(f"SpotDL: {line}")
+        
+        stderr_output = process.stderr.read()
+        return_code = process.wait()
+        
+        if return_code != 0:
+            logger.error(f"SpotDL-Error: {stderr_output}")
+            raise subprocess.CalledProcessError(return_code, cmd, stderr_output)
+        
         logger.info(f"Successfully downloaded '{artist} - {title}.{audio_format}'")
     except subprocess.CalledProcessError as e:
         logger.error(f"SpotDL-Error: {e.stderr}")
